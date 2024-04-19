@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Recommendation System</title>
+    <style>
+        
+        .image-container img {
+            max-width: 200px;
+            max-height: 200px;
+            cursor: pointer;
+        }
+        .image-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .image-container {
+            margin: 10px;
+        }
+        .product-info {
+            max-width: 200px;
+        }
+
+        .product-info p {
+            word-wrap: break-word;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>WELCOME !!!</h1>
+    <form id="uploadForm" action="/result" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="fileInput" onchange="submitForm(this)">
+        <button type="button" onclick="viewCart()">Go to Cart<span id="cartCount"></span></button> <!-- Button to go to cart -->
+
+
+    <h2>Men:</h2>
+    <div class="image-row" id="recommendation">
+        {% for path, display_name in men_products %}
+        <div class="image-container">
+            <a href="#" onclick="handleImageClick('{{ path }}')">
+                <img src="{{ path }}" alt="{{ display_name }}">
+            </a>
+            <div class="product-info">
+                <p><strong>{{ display_name }}</strong></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <h2>Women:</h2>
+    <div class="image-row" id="recommendation">
+        {% for path, display_name in women_products %}
+        <div class="image-container">
+            <a href="#" onclick="handleImageClick('{{ path }}')">
+                <img src="{{ path }}" alt="{{ display_name }}">
+            </a>
+            <div class="product-info">
+                <p><strong>{{ display_name }}</strong></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <h2>Kids:</h2>
+    <div class="image-row" id="recommendation">
+        {% for path, display_name in kid_products %}
+        <div class="image-container">
+            <a href="#" onclick="handleImageClick('{{ path }}')">
+                <img src="{{ path }}" alt="{{ display_name }}">
+            </a>
+            <div class="product-info">
+                <p><strong>{{ display_name }}</strong></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <h2>Shoes:</h2>
+    <div class="image-row" id="recommendation">
+        {% for path, display_name in shoes_products %}
+        <div class="image-container">
+            <a href="#" onclick="handleImageClick('{{ path }}')">
+                <img src="{{ path }}" alt="{{ display_name }}">
+            </a>
+            <div class="product-info">
+                <p><strong>{{ display_name }}</strong></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <h2>Jewellery:</h2>
+    <div class="image-row" id="recommendation">
+        {% for path, display_name in jewellery_products %}
+        <div class="image-container">
+            <a href="#" onclick="handleImageClick('{{ path }}')">
+                <img src="{{ path }}" alt="{{ display_name }}">
+            </a>
+            <div class="product-info">
+                <p><strong>{{ display_name }}</strong></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <h2>Accessories:</h2>
+    <div class="image-row" id="recommendation">
+        {% for path, display_name in accessories_products %}
+        <div class="image-container">
+            <a href="#" onclick="handleImageClick('{{ path }}')">
+                <img src="{{ path }}" alt="{{ display_name }}">
+            </a>
+            <div class="product-info">
+                <p><strong>{{ display_name }}</strong></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    
+    <h2>More Products:</h2>
+    <div class="image-row" id="recommendation">
+        {% for path, display_name in more_products %}
+        <div class="image-container">
+            <a href="#" onclick="handleImageClick('{{ path }}')">
+                <img src="{{ path }}" alt="{{ display_name }}">
+            </a>
+            <div class="product-info">
+                <p><strong>{{ display_name }}</strong></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function submitForm(input) {
+            document.getElementById("uploadForm").submit();
+        }
+
+
+        function handleImageClick(path) {
+            var parts = path.split("/");
+            var filename = parts[parts.length - 1];
+
+            // Create a form element
+            var form = document.createElement("form");
+            form.setAttribute("method", "POST");
+            form.setAttribute("action", "/result"); // Set the action to the endpoint where you handle form submission
+
+            // Create a hidden input field to include the filename
+            var hiddenInput = document.createElement("input");
+            hiddenInput.setAttribute("type", "hidden");
+            hiddenInput.setAttribute("name", "filename");
+            hiddenInput.setAttribute("value", filename);
+
+            form.appendChild(hiddenInput);
+            document.body.appendChild(form);
+
+            form.submit();
+        }
+
+        function addToCart(path) {
+            // Extract the filename from the path
+            var filename = path.split("/").pop();
+
+            // Send an AJAX request to the server to add the product to the cart
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/add_to_cart", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    updateCartCount();
+                }
+            };
+            xhr.send(JSON.stringify({ "filename": filename }));
+
+            var productId = filename.split(".")[0];
+            alert("You added product " + productId + " to your cart");
+        }
+
+        function viewCart() {
+            window.location.href = "/cart";
+        }
+
+
+        function updateCartCount() {
+            // Get the cart count element
+            var cartCountElement = document.getElementById("cartCount");
+
+            // Send an AJAX request to get the cart count from the server
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/cart_count", true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Update the cart count element with the received count
+                    cartCountElement.textContent = " (" + xhr.responseText + ")";
+                }
+            };
+            xhr.send();
+        }
+
+        // Function to update the cart count
+        function updateCartCountOnPageShow() {
+            // Send an AJAX request to get the cart count from the server
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/cart_count", true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Update the cart count element with the received count
+                    var cartCount = parseInt(xhr.responseText);
+                    document.getElementById("cartCount").textContent = " (" + cartCount + ")";
+                }
+            };
+            xhr.send();
+        }
+
+        window.addEventListener("pageshow", updateCartCountOnPageShow);
+
+
+        function updateCartCount2() {
+            var cartCountElement = document.getElementById("cartCount");
+
+            // Send an AJAX request to get the cart count from the server
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/remove_from_cart", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    var cartLength = response.cart_length;
+                    cartCountElement.textContent = " (" + cartLength + ")";
+                }
+            };
+            xhr.send();
+        }
+
+        function reloadPage() {
+            location.reload();
+        }
+
+        window.onload = reloadPage;
+        
+        window.onload = updateCartCount;
+
+
+        // Function to navigate to the cart page
+        function viewCart() {
+            window.location.href = "/cart";
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Fashion Recommendation System</title>
+        <style>
+            .image-row {
+                display: flex;
+                margin-top: 20px;
+            }
+
+            .image-container {
+                display: flex;
+                align-items: center;
+                margin-right: 10px;
+            }
+
+            .recommendation .image-container {
+                display: flex;
+                flex-direction: column; 
+                align-items: center;
+                margin-right: 10px;
+            }
+
+            .recommendation .image-container img {
+                max-width: 200px;
+                max-height: 200px;
+                cursor: pointer;
+            }
+
+            .recommendation .product-info {
+                max-width: 200px;
+            }
+
+            .recommendation .product-info p {
+                word-wrap: break-word;
+            }
+
+            .product-info {
+                max-width: 200px;
+            }
+
+            .product-info p {
+                word-wrap: break-word;
+            }
+            .image-container img {
+                max-width: 200px;
+                max-height: 200px;
+                cursor: pointer; 
+            }
+            h1 {
+                margin-top: 70px;
+            }
+            .back-arrow {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                font-size: 48px;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="back-arrow" onclick="goBack()">
+            &#8592;
+        </div>
+
+        <h1>Fashion Recommendation System</h1>
+        <form id="uploadForm" action="/result" method="post" enctype="multipart/form-data">
+            <button type="button" onclick="viewCart()">Go to Cart<span id="cartCount"></span></button> <!-- Button to go to cart -->
+
+
+
+
+        </form>
+        
+        <h2>Chosen Product:</h2>
+        <div class="chosen-product" id="chosenProduct">
+            {% for path in chosen_product %}
+            <div class="image-container">
+                <div class="product-info">
+                    <p><strong>Name:</strong> {{ product_display_names[0] }}</p>
+                    <p><strong>Gender:</strong> {{ product_display_names[1] }}</p>
+                    <p><strong>Category:</strong> {{ product_display_names[3] }}</p>
+                    <p><strong>Sub Category:</strong> {{ product_display_names[4] }}</p>
+                    <p><strong>Color:</strong> {{ product_display_names[2] }}</p>
+                </div>
+                <a href="#" onclick="handleImageClick('{{ path }}')">
+                    <img src="{{ path }}" alt="Image">
+                </a>
+                <button onclick="addToCart('{{ path }}')">Add to Cart</button> <!-- Button to add product to cart -->
+            </div>
+            {% endfor %}
+        </div>
+
+
+    <h2>Recommendation:</h2>
+    <div class="image-row recommendation" id="recommendation">
+        <!-- Recommendation content -->
+        {% for path, display_name in recommended_zipped %}
+        <div class="image-container">
+            <a href="#" onclick="handleImageClick('{{ path }}')">
+                <img src="{{ path }}" alt="{{ display_name }}">
+            </a>
+            <div class="product-info">
+                <p><strong>{{ display_name }}</strong></p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+        
+    
+
+    <script>
+        function submitForm(input) {
+            document.getElementById("uploadForm").submit();
+        }
+
+
+        function handleImageClick(path) {
+            var parts = path.split("/");
+            var filename = parts[parts.length - 1];
+
+            // Create a form element
+            var form = document.createElement("form");
+            form.setAttribute("method", "POST");
+            form.setAttribute("action", "/result"); // Set the action to the endpoint where you handle form submission
+
+            // Create a hidden input field to include the filename
+            var hiddenInput = document.createElement("input");
+            hiddenInput.setAttribute("type", "hidden");
+            hiddenInput.setAttribute("name", "filename");
+            hiddenInput.setAttribute("value", filename);
+
+            form.appendChild(hiddenInput);
+            document.body.appendChild(form);
+
+            form.submit();
+        }
+
+        function addToCart(path) {
+            // Extract the filename from the path
+            if (!path.includes("static/images")) {
+                alert("This product does not belong to our store. Please select a product that is from our store!!");
+                return;
+            }
+            else {
+                var filename = path.split("/").pop();
+
+                // Send an AJAX request to the server to add the product to the cart
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/add_to_cart", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response && response.product_name) {
+                            alert("You added product '" + response.product_name + "' to your cart");
+                        } else {
+                            alert("Product added to cart");
+                        }
+                        
+                        updateCartCountOnPageShow();
+                    }
+                };
+                xhr.send(JSON.stringify({ "filename": filename }));
+            }
+        }
+
+
+        function viewCart() {
+            window.location.href = "/cart";
+        }
+
+        // Function to update the cart count
+        function updateCartCountOnPageShow() {
+            // Send an AJAX request to get the cart count from the server
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/cart_count", true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Update the cart count element with the received count
+                    var cartCount = parseInt(xhr.responseText);
+                    document.getElementById("cartCount").textContent = " (" + cartCount + ")";
+                }
+            };
+            xhr.send();
+        }
+
+        // Call the updateCartCountOnPageShow function when the page is shown
+        window.addEventListener("pageshow", updateCartCountOnPageShow);
+
+        function updateCartCount2() {
+            var cartCountElement = document.getElementById("cartCount");
+
+            // Send an AJAX request to get the cart count from the server
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/remove_from_cart", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    var cartLength = response.cart_length;
+                    cartCountElement.textContent = " (" + cartLength + ")";
+                }
+            };
+            xhr.send();
+        }
+
+        window.onload = updateCartCount;
+
+        function viewCart() {
+            window.location.href = "/cart";
+        }
+
+        function goBack() {
+            window.location.href = "/";
+        }
+
+    </script>
+
+</body>
+</html>
+
+
